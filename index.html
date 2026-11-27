@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오늘의 학식 메뉴 투표</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Pretendard & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans KR"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              850: '#102442',
+              900: '#0A192F',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased selection:bg-blue-200 selection:text-blue-900 min-h-screen flex flex-col items-center">
+
+  <!-- 전체 모바일 퍼스트 컨테이너 -->
+  <div class="w-full max-w-md bg-white min-h-screen sm:min-h-0 sm:my-8 sm:rounded-3xl shadow-xl shadow-blue-950/5 overflow-hidden flex flex-col border border-slate-200/80">
+    
+    <!-- 상단 네이비 & 블루 그라데이션 헤더 -->
+    <header class="bg-gradient-to-br from-navy-900 via-blue-900 to-blue-700 text-white px-6 pt-8 pb-7 rounded-b-3xl shadow-md relative overflow-hidden">
+      <!-- 배경 장식 원형 포인트 -->
+      <div class="w-40 h-40 bg-sky-400/15 rounded-full absolute -top-10 -right-10 blur-xl pointer-events-none"></div>
+      <div class="w-28 h-28 bg-blue-400/15 rounded-full absolute bottom-2 -left-8 blur-lg pointer-events-none"></div>
+
+      <div class="relative z-10 flex items-center justify-between mb-3">
+        <span id="todayDateBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 text-sky-100 backdrop-blur-sm border border-white/10">
+          📅 오늘의 중식 투표
+        </span>
+        <button id="openEditModalBtn" type="button" class="text-xs font-medium text-sky-200 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition active:scale-95 flex items-center gap-1">
+          ✏️ 메뉴 수정
+        </button>
+      </div>
+
+      <h1 class="relative z-10 text-2xl font-extrabold tracking-tight leading-snug">
+        오늘 점심, 어떤 학식이<br/>가장 끌리시나요?
+      </h1>
+      <p class="relative z-10 text-sky-100/90 text-sm mt-1.5 font-normal">
+        학생식당 실시간 선호도 조사 · 1인 1표 참여
+      </p>
+    </header>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="flex-1 px-5 py-6 space-y-6">
+      
+      <!-- 섹션 1: 메뉴 선택 카드 리스트 -->
+      <section aria-labelledby="menu-select-heading">
+        <div class="flex items-center justify-between mb-3">
+          <h2 id="menu-select-heading" class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
+            오늘의 메뉴 후보 (택 1)
+          </h2>
+          <span id="voteStatusText" class="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+            투표 전
+          </span>
+        </div>
+
+        <!-- 메뉴 카드들이 동적으로 렌더링되는 컨테이너 -->
+        <div id="menuListContainer" class="space-y-3"></div>
+
+        <!-- 하단 액션 버튼 영역 (한 손 조작 친화적 크기) -->
+        <div class="mt-4 flex gap-2.5">
+          <button id="submitVoteBtn" type="button" class="flex-1 py-3.5 px-5 rounded-2xl font-bold text-base text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/25 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span>투표하기</span>
+          </button>
+          <button id="revoteBtn" type="button" class="hidden py-3.5 px-4 rounded-2xl font-semibold text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 active:scale-[0.98] transition-all">
+            다시 투표
+          </button>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-slate-200/80" />
+
+      <!-- 섹션 2: 실시간 투표 결과 막대그래프 -->
+      <section aria-labelledby="result-heading" class="bg-slate-50/90 rounded-2xl p-5 border border-slate-200/80">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 id="result-heading" class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+              📊 실시간 투표 현황
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">투표 즉시 그래프가 업데이트됩니다</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-500 block">총 참여</span>
+            <span id="totalVotesCount" class="text-lg font-extrabold text-blue-700">0명</span>
+          </div>
+        </div>
+
+        <!-- 가로 막대그래프 컨테이너 -->
+        <div id="chartContainer" class="space-y-4"></div>
+
+        <!-- 하단 초기화 유틸리티 -->
+        <div class="mt-5 pt-3.5 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <span>브라우저에 투표 내역 자동 저장</span>
+          <button id="resetDataBtn" type="button" class="text-slate-500 hover:text-red-600 underline underline-offset-2 font-medium transition py-1 px-1">
+            데이터 초기화
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 토스트 알림 메시지 박스 (alert() 대체) -->
+  <div id="toastBox" role="status" aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-3">
+    <div id="toastMessage" class="bg-navy-900/95 text-white text-sm font-medium px-5 py-3 rounded-full shadow-xl border border-white/10 backdrop-blur-md whitespace-nowrap">
+      알림 메시지
+    </div>
+  </div>
+
+  <!-- 메뉴명 수정 모달 -->
+  <div id="editModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 animate-[fadeIn_0.2s_ease-out]">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900">오늘의 학식 메뉴 수정</h3>
+        <button id="closeEditModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">
+          ✕
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">메뉴 이름이나 설명을 수정하면 투표 현황과 함께 반영됩니다.</p>
+      
+      <form id="editMenuForm" class="space-y-3.5">
+        <div id="editInputsContainer" class="space-y-3"></div>
+        <div class="pt-2 flex gap-2">
+          <button type="button" id="cancelEditBtn" class="flex-1 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+            취소
+          </button>
+          <button type="submit" class="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition">
+            저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 데이터 초기화 확인 모달 (confirm() 대체) -->
+  <div id="resetConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-slate-100 text-center">
+      <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mx-auto mb-3">
+        🔄
+      </div>
+      <h3 class="text-base font-extrabold text-slate-900 mb-1.5">투표 데이터를 초기화할까요?</h3>
+      <p class="text-xs text-slate-500 leading-relaxed mb-5">
+        현재까지 누적된 투표 내역과 내 투표 기록이 초기 데모 상태로 되돌아갑니다.
+      </p>
+      <div class="flex gap-2">
+        <button id="cancelResetBtn" type="button" class="flex-1 py-2.5 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+          취소
+        </button>
+        <button id="confirmResetBtn" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 transition">
+          초기화
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * 오늘의 학식 메뉴 투표 애플리케이션
+     * - localStorage 기반 상태 영속성 유지
+     * - 초기 데모 데이터 내장
+     * - 접근성 및 모바일 터치 최적화 UI
+     */
+    (function () {
+      const STORAGE_KEY = 'campus_lunch_vote_v1';
+
+      // 기본 초기 데이터 (처음 열어도 그래프가 보기 좋게 기본 득표수 포함)
+      const DEFAULT_STATE = {
+        menus: [
+          {
+            id: 'menu-1',
+            icon: '🍱',
+            name: '등심 돈까스 & 미니 우동 세트',
+            desc: '바삭한 수제 등심 돈까스와 따뜻한 가쓰오 우동, 샐러드',
+            meta: '6,500원 · 920kcal',
+            votes: 24
+          },
+          {
+            id: 'menu-2',
+            icon: '🔥',
+            name: '직화 제육덮밥 & 맑은 계란국',
+            desc: '불향 가득 매콤달콤 돼지고기 볶음과 부드러운 계란국',
+            meta: '6,000원 · 840kcal',
+            votes: 31
+          },
+          {
+            id: 'menu-3',
+            icon: '🍲',
+            name: '해물 치즈 순두부찌개 & 솥밥',
+            desc: '얼큰한 순두부찌개 위 모짜렐라 치즈 토핑과 갓 지은 솥밥',
+            meta: '6,200원 · 780kcal',
+            votes: 19
+          }
+        ],
+        votedMenuId: null // 사용자가 투표한 메뉴 ID (null이면 미투표)
+      };
+
+      // 애플리케이션 상태
+      let appState = loadState();
+      let selectedMenuId = appState.votedMenuId; // 현재 카드에서 선택 중인 메뉴 ID
+      let toastTimer = null;
+
+      // DOM 요소 참조
+      const todayDateBadge = document.getElementById('todayDateBadge');
+      const menuListContainer = document.getElementById('menuListContainer');
+      const chartContainer = document.getElementById('chartContainer');
+      const totalVotesCount = document.getElementById('totalVotesCount');
+      const voteStatusText = document.getElementById('voteStatusText');
+      const submitVoteBtn = document.getElementById('submitVoteBtn');
+      const revoteBtn = document.getElementById('revoteBtn');
+
+      // 모달 및 알림 요소
+      const toastBox = document.getElementById('toastBox');
+      const toastMessage = document.getElementById('toastMessage');
+      const openEditModalBtn = document.getElementById('openEditModalBtn');
+      const closeEditModalBtn = document.getElementById('closeEditModalBtn');
+      const cancelEditBtn = document.getElementById('cancelEditBtn');
+      const editModal = document.getElementById('editModal');
+      const editMenuForm = document.getElementById('editMenuForm');
+      const editInputsContainer = document.getElementById('editInputsContainer');
+
+      const resetDataBtn = document.getElementById('resetDataBtn');
+      const resetConfirmModal = document.getElementById('resetConfirmModal');
+      const cancelResetBtn = document.getElementById('cancelResetBtn');
+      const confirmResetBtn = document.getElementById('confirmResetBtn');
+
+      /**
+       * localStorage에서 상태 불러오기 (오류 방지 try/catch)
+       */
+      function loadState() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed.menus) && parsed.menus.length === 3) {
+              return parsed;
+            }
+          }
+        } catch (err) {
+          console.error('저장된 투표 데이터를 불러오는 중 오류 발생:', err);
+        }
+        return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+
+      /**
+       * localStorage에 현재 상태 저장하기
+       */
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        } catch (err) {
+          console.error('투표 데이터를 저장하는 중 오류 발생:', err);
+        }
+      }
+
+      /**
+       * 오늘 날짜 포맷팅 표시
+       */
+      function renderTodayDate() {
+        const now = new Date();
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const month = now.getMonth() + 1;
+        const date = now.getDate();
+        const day = days[now.getDay()];
+        todayDateBadge.textContent = `📅 ${month}월 ${date}일 (${day}) 중식 투표`;
+      }
+
+      /**
+       * 토스트 알림 표시 함수
+       */
+      function showToast(message) {
+        toastMessage.textContent = message;
+        toastBox.classList.remove('opacity-0', 'translate-y-3');
+        toastBox.classList.add('opacity-100', 'translate-y-0');
+
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastBox.classList.remove('opacity-100', 'translate-y-0');
+          toastBox.classList.add('opacity-0', 'translate-y-3');
+        }, 2500);
+      }
+
+      /**
+       * 메뉴 카드 목록 렌더링
+       */
+      function renderMenuCards() {
+        const hasVoted = Boolean(appState.votedMenuId);
+        menuListContainer.innerHTML = '';
+
+        appState.menus.forEach((menu, index) => {
+          const isSelected = selectedMenuId === menu.id;
+          const isMyVoted = appState.votedMenuId === menu.id;
+
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.disabled = hasVoted;
+          card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+
+          // 선택 상태 및 투표 완료 여부에 따른 파란색 테마 스타일 분기
+          let cardClasses = 'w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 flex items-start gap-3.5 relative ';
+          if (isMyVoted) {
+            cardClasses += 'border-blue-600 bg-blue-50/70 shadow-sm';
+          } else if (isSelected && !hasVoted) {
+            cardClasses += 'border-blue-600 bg-blue-50/60 shadow-md shadow-blue-900/5 scale-[1.01]';
+          } else if (hasVoted) {
+            cardClasses += 'border-slate-200/80 bg-slate-50/60 opacity-75 cursor-default';
+          } else {
+            cardClasses += 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50/70 active:scale-[0.99] cursor-pointer';
+          }
+          card.className = cardClasses;
+
+          card.innerHTML = `
+            <!-- 음식 아이콘 박스 -->
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
+              isSelected || isMyVoted ? 'bg-blue-600 text-white shadow-sm' : 'bg-blue-50 text-blue-700'
+            } transition-colors">
+              ${menu.icon}
+            </div>
+
+            <!-- 메뉴 상세 정보 -->
+            <div class="flex-1 min-w-0 pr-6">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-xs font-bold text-blue-600">후보 ${index + 1}</span>
+                ${isMyVoted ? '<span class="text-[11px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">내 선택</span>' : ''}
+              </div>
+              <h3 class="font-bold text-slate-900 text-[15px] leading-snug mt-0.5 truncate">
+                ${escapeHTML(menu.name)}
+              </h3>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                ${escapeHTML(menu.desc)}
+              </p>
+              <span class="inline-block mt-2 text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-md">
+                ${escapeHTML(menu.meta)}
+              </span>
+            </div>
+
+            <!-- 우측 라디오 체크 인디케이터 -->
+            <div class="absolute right-4 top-1/2 -translate-y-1/2">
+              <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                isSelected || isMyVoted
+                  ? 'border-blue-600 bg-blue-600'
+                  : 'border-slate-300 bg-white'
+              }">
+                ${
+                  isSelected || isMyVoted
+                    ? '<svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>'
+                    : ''
+                }
+              </div>
+            </div>
+          `;
+
+          if (!hasVoted) {
+            card.addEventListener('click', () => {
+              selectedMenuId = menu.id;
+              renderMenuCards();
+              updateActionButtons();
+            });
+          }
+
+          menuListContainer.appendChild(card);
+        });
+      }
+
+      /**
+       * 투표 버튼 및 상태 배지 업데이트
+       */
+      function updateActionButtons() {
+        const hasVoted = Boolean(appState.votedMenuId);
+
+        if (hasVoted) {
+          voteStatusText.textContent = '투표 완료 ✓';
+          voteStatusText.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full';
+          submitVoteBtn.disabled = true;
+          submitVoteBtn.innerHTML = '<span>투표가 반영되었습니다</span>';
+          revoteBtn.classList.remove('hidden');
+        } else {
+          voteStatusText.textContent = selectedMenuId ? '메뉴 선택됨' : '메뉴를 선택하세요';
+          voteStatusText.className = 'text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full';
+          submitVoteBtn.disabled = !selectedMenuId;
+          submitVoteBtn.innerHTML = '<span>투표하기</span>';
+          revoteBtn.classList.add('hidden');
+        }
+      }
+
+      /**
+       * 실시간 가로 막대그래프 렌더링
+       */
+      function renderResultChart() {
+        const totalVotes = appState.menus.reduce((sum, item) => sum + item.votes, 0);
+        totalVotesCount.textContent = `${totalVotes.toLocaleString()}명`;
+
+        // 최고 득표수 계산 (1위 배지 표시용, 0표 초과 시)
+        const maxVotes = Math.max(...appState.menus.map(m => m.votes));
+
+        chartContainer.innerHTML = '';
+
+        appState.menus.forEach((menu) => {
+          const percentage = totalVotes > 0 ? Math.round((menu.votes / totalVotes) * 100) : 0;
+          const isFirstPlace = totalVotes > 0 && menu.votes === maxVotes;
+          const isMyChoice = appState.votedMenuId === menu.id;
+
+          const row = document.createElement('div');
+          row.className = 'space-y-1.5';
+
+          row.innerHTML = `
+            <div class="flex items-center justify-between gap-2 text-sm">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-base shrink-0">${menu.icon}</span>
+                <span class="font-bold text-slate-800 truncate ${isFirstPlace ? 'text-navy-900' : ''}">
+                  ${escapeHTML(menu.name)}
+                </span>
+                ${
+                  isFirstPlace
+                    ? '<span class="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-extrabold bg-gradient-to-r from-blue-600 to-sky-500 text-white px-2 py-0.5 rounded-full shadow-xs">👑 1위</span>'
+                    : ''
+                }
+                ${
+                  isMyChoice
+                    ? '<span class="shrink-0 text-[11px] font-bold text-blue-600 bg-blue-100/80 px-1.5 py-0.5 rounded">MY</span>'
+                    : ''
+                }
+              </div>
+              <div class="shrink-0 text-right tabular-nums">
+                <span class="font-extrabold ${isFirstPlace ? 'text-blue-700' : 'text-slate-700'}">${percentage}%</span>
+                <span class="text-xs text-slate-400 ml-1">(${menu.votes}표)</span>
+              </div>
+            </div>
+
+            <!-- 가로 막대 트랙 -->
+            <div class="w-full h-3.5 bg-slate-200/80 rounded-full overflow-hidden p-0.5">
+              <div
+                class="bar-fill h-full rounded-full transition-all duration-700 ease-out ${
+                  isFirstPlace
+                    ? 'bg-gradient-to-r from-navy-900 via-blue-700 to-sky-500'
+                    : 'bg-blue-400/80'
+                }"
+                style="width: 0%"
+                data-target-width="${percentage}%"
+              ></div>
+            </div>
+          `;
+
+          chartContainer.appendChild(row);
+        });
+
+        // 브라우저 리페인트 이후 부드러운 막대 너비 애니메이션 트리거
+        requestAnimationFrame(() => {
+          const bars = chartContainer.querySelectorAll('.bar-fill');
+          bars.forEach((bar) => {
+            bar.style.width = bar.getAttribute('data-target-width');
+          });
+        });
+      }
+
+      /**
+       * 투표 제출 핸들러
+       */
+      function handleVoteSubmit() {
+        if (!selectedMenuId || appState.votedMenuId) return;
+
+        const targetMenu = appState.menus.find((m) => m.id === selectedMenuId);
+        if (!targetMenu) return;
+
+        targetMenu.votes += 1;
+        appState.votedMenuId = targetMenu.id;
+        saveState();
+
+        renderMenuCards();
+        updateActionButtons();
+        renderResultChart();
+        showToast(`'${targetMenu.name}'에 투표했습니다!`);
+      }
+
+      /**
+       * 다시 투표하기 핸들러 (기존 내 표 차감 후 재선택 가능하게 전환)
+       */
+      function handleRevote() {
+        if (!appState.votedMenuId) return;
+
+        const prevMenu = appState.menus.find((m) => m.id === appState.votedMenuId);
+        if (prevMenu && prevMenu.votes > 0) {
+          prevMenu.votes -= 1;
+        }
+
+        selectedMenuId = appState.votedMenuId;
+        appState.votedMenuId = null;
+        saveState();
+
+        renderMenuCards();
+        updateActionButtons();
+        renderResultChart();
+        showToast('다른 메뉴를 선택해 다시 투표할 수 있어요.');
+      }
+
+      /**
+       * 메뉴 수정 모달 열기
+       */
+      function openEditModal() {
+        editInputsContainer.innerHTML = '';
+
+        appState.menus.forEach((menu, idx) => {
+          const group = document.createElement('div');
+          group.className = 'p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2';
+          group.innerHTML = `
+            <label class="block text-xs font-bold text-blue-700">후보 ${idx + 1} 메뉴명</label>
+            <input
+              type="text"
+              name="name-${menu.id}"
+              value="${escapeHTML(menu.name)}"
+              required
+              maxlength="30"
+              class="w-full px-3 py-2 text-sm font-semibold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600"
+            />
+            <input
+              type="text"
+              name="desc-${menu.id}"
+              value="${escapeHTML(menu.desc)}"
+              required
+              maxlength="55"
+              placeholder="간단한 메뉴 설명"
+              class="w-full px-3 py-1.5 text-xs text-slate-600 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600"
+            />
+          `;
+          editInputsContainer.appendChild(group);
+        });
+
+        editModal.classList.remove('hidden');
+        editModal.classList.add('flex');
+      }
+
+      function closeEditModal() {
+        editModal.classList.add('hidden');
+        editModal.classList.remove('flex');
+      }
+
+      /**
+       * 메뉴 수정 저장 핸들러
+       */
+      function handleEditSave(e) {
+        e.preventDefault();
+        const formData = new FormData(editMenuForm);
+
+        appState.menus.forEach((menu) => {
+          const newName = (formData.get(`name-${menu.id}`) || '').toString().trim();
+          const newDesc = (formData.get(`desc-${menu.id}`) || '').toString().trim();
+          if (newName) menu.name = newName;
+          if (newDesc) menu.desc = newDesc;
+        });
+
+        saveState();
+        closeEditModal();
+        renderMenuCards();
+        renderResultChart();
+        showToast('오늘의 학식 메뉴 정보가 수정되었습니다.');
+      }
+
+      /**
+       * XSS 방지를 위한 간단한 HTML 이스케이프
+       */
+      function escapeHTML(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // 이벤트 리스너 바인딩
+      submitVoteBtn.addEventListener('click', handleVoteSubmit);
+      revoteBtn.addEventListener('click', handleRevote);
+
+      openEditModalBtn.addEventListener('click', openEditModal);
+      closeEditModalBtn.addEventListener('click', closeEditModal);
+      cancelEditBtn.addEventListener('click', closeEditModal);
+      editMenuForm.addEventListener('submit', handleEditSave);
+
+      // 모달 바깥 영역 클릭 시 닫기
+      editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) closeEditModal();
+      });
+
+      // 초기화 확인 모달 제어
+      resetDataBtn.addEventListener('click', () => {
+        resetConfirmModal.classList.remove('hidden');
+        resetConfirmModal.classList.add('flex');
+      });
+
+      cancelResetBtn.addEventListener('click', () => {
+        resetConfirmModal.classList.add('hidden');
+        resetConfirmModal.classList.remove('flex');
+      });
+
+      confirmResetBtn.addEventListener('click', () => {
+        appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        selectedMenuId = null;
+        saveState();
+
+        resetConfirmModal.classList.add('hidden');
+        resetConfirmModal.classList.remove('flex');
+
+        renderMenuCards();
+        updateActionButtons();
+        renderResultChart();
+        showToast('투표 현황이 초기 상태로 리셋되었습니다.');
+      });
+
+      resetConfirmModal.addEventListener('click', (e) => {
+        if (e.target === resetConfirmModal) {
+          resetConfirmModal.classList.add('hidden');
+          resetConfirmModal.classList.remove('flex');
+        }
+      });
+
+      // 초기 렌더링 실행
+      renderTodayDate();
+      renderMenuCards();
+      updateActionButtons();
+      renderResultChart();
+    })();
+  </script>
+</body>
+</html>
